@@ -30,7 +30,6 @@ COPY --from=builder /app/dist ./dist
 RUN mkdir -p /app/data /app/temp
 
 # Environments
-ENV NODE_ENV=production
 EXPOSE 3000
 
 # Run server

@@ -4,6 +4,6 @@ applications:
     memory: 512M
     instances: 1
     buildpack: nodejs_buildpack
-    command: npm start
+    command: npm start-cf
     env:
       NODE_ENV: production

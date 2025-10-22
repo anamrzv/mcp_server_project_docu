@@ -17,10 +17,9 @@
     "rimraf": "^6.0.1"
   },
   "scripts": {
-    "clean": "rimraf dist",
-    "build": "npm run clean && tsc",
+    "build": "tsc",
     "start": "node dist/server.js",
     "start-ts": "tsx server.ts",
-    "postinstall": "npm run build"
+    "start-cf": "npm run build && node dist/server.js"
   }
 }

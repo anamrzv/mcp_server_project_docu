@@ -1,0 +1,18 @@
+services:
+  documentation-mcp-server:
+    build: 
+        context: .
+        dockerfile: Dockerfile
+    ports:
+      - "${APP_PORT}:${APP_PORT}"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - NODE_ENV=${NODE_ENV}
+      - APP_PORT
+      - SAP_URL=${SAP_URL}
+      - SAP_USER=${SAP_USER}
+      - SAP_PASSWORD=${SAP_PASSWORD}
+      - SAP_CLIENT=${SAP_CLIENT}
+      - SAP_LANGUAGE=${SAP_LANGUAGE}
+    restart: unless-stopped

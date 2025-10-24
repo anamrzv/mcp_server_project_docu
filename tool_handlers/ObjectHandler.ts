@@ -6,27 +6,8 @@ export class ObjectHandler extends BaseHandler {
     getTools(): ToolDefinition[] {
         return [
             {
-                name: 'objectStructure',
-                description: 'Get object structure details',
-                inputSchema: {
-                    type: 'object',
-                    properties: {
-                        objectUrl: {
-                            type: 'string',
-                            description: 'URL of the object'
-                        },
-                        version: {
-                            type: 'string',
-                            description: 'Version of the object',
-                            optional: true
-                        }
-                    },
-                    required: ['objectUrl']
-                }
-            },
-            {
-                name: 'searchObject',
-                description: 'Search for objects',
+                name: 'getObjects',
+                description: 'Get objects by regex query. Returns objectURL',
                 inputSchema: {
                     type: 'object',
                     properties: {
@@ -49,8 +30,39 @@ export class ObjectHandler extends BaseHandler {
                 }
             },
             {
-                name: 'findObjectPath',
-                description: 'Find path for an object',
+                name: 'getObjectStructure',
+                description: 'Retrieves technical metadata and structural components of an ABAP object. Returns core attributes, object links, URIs for individual source segments (definitions, implementations, and test classes)',
+                inputSchema: {
+                    type: 'object',
+                    properties: {
+                        objectUrl: {
+                            type: 'string',
+                            description: 'URL of the object'
+                        },
+                        version: {
+                            type: 'string',
+                            description: 'Version of the object',
+                            optional: true
+                        }
+                    },
+                    required: ['objectUrl']
+                }
+            },
+            {
+                name: 'getObjectSourceCode',
+                description: 'Retrieves source code for a ABAP object. Use this tool when you need to read or analyze existing ABAP code.',
+                inputSchema: {
+                  type: 'object',
+                  properties: {
+                    objectUrl: { type: 'string' },
+                    options: { type: 'string' }
+                  },
+                  required: ['objectUrl']
+                }
+            },
+            {
+                name: 'getObjectPath',
+                description: 'Retrieves the full hierarchical path of an ABAP object within the systems package structure, starting from its root package down to the object itself',
                 inputSchema: {
                     type: 'object',
                     properties: {
@@ -63,23 +75,22 @@ export class ObjectHandler extends BaseHandler {
                 }
             },
             {
-                name: 'objectTypes',
-                description: 'Retrieves object types.',
+                name: 'getObjectVersionHistory',
+                description: 'Retrieves version history for a specific object or one of its includes. Returns list of revision links with the date and author of each change',
                 inputSchema: {
                     type: 'object',
-                    properties: {}
-                }
-            },
-            {
-                name: 'getObjectSource',
-                description: 'Retrieves source code for ABAP objects',
-                inputSchema: {
-                  type: 'object',
-                  properties: {
-                    objectSourceUrl: { type: 'string' },
-                    options: { type: 'string' }
-                  },
-                  required: ['objectSourceUrl']
+                    properties: {
+                        objectUrl: {
+                            type: 'string',
+                            description: 'The URL of the object.'
+                        },
+                        clasInclude: {
+                            type: 'string',
+                            description: 'The class include.',
+                            optional: true
+                        }
+                    },
+                    required: ['objectUrl']
                 }
             }
         ];
@@ -87,16 +98,16 @@ export class ObjectHandler extends BaseHandler {
 
     async handle(toolName: string, args: any): Promise<any> {
         switch (toolName) {
-            case 'objectStructure':
+            case 'getObjects':
+                return this.handleGetObjects(args);
+            case 'getObjectStructure':
                 return this.handleObjectStructure(args);
-            case 'findObjectPath':
-                return this.handleFindObjectPath(args);
-            case 'searchObject':
-                return this.handleSearchObject(args);
-            case 'objectTypes':
-                return this.handleObjectTypes(args);
-            case 'getObjectSource':
-                return this.handleGetObjectSource(args);
+            case 'getObjectSourceCode':
+                return this.handleGetObjectSourceCode(args);
+            case 'getObjectPath':
+                return this.handleGetObjectPath(args);
+            case 'getObjectVersionHistory':
+                return this.handleObjectVersionHistory(args);
             default:
                 throw new McpError(ErrorCode.MethodNotFound, `Unknown object tool: ${toolName}`);
         }
@@ -130,7 +141,7 @@ export class ObjectHandler extends BaseHandler {
         }
     }
 
-    async handleFindObjectPath(args: any): Promise<any> {
+    async handleGetObjectPath(args: any): Promise<any> {
         const startTime = performance.now();
         try {
             const path = await this.adtclient.findObjectPath(args.objectUrl);
@@ -158,7 +169,7 @@ export class ObjectHandler extends BaseHandler {
         }
     }
 
-    async handleSearchObject(args: any): Promise<any> {
+    async handleGetObjects(args: any): Promise<any> {
         const startTime = performance.now();
         try {
             const results = await this.adtclient.searchObject(
@@ -186,34 +197,6 @@ export class ObjectHandler extends BaseHandler {
             throw new McpError(
                 ErrorCode.InternalError,
                 `Failed to search objects: ${detailedError}`
-            );
-        }
-    }
-
-    async handleObjectTypes(args: any): Promise<any> {
-        const startTime = performance.now();
-        try {
-            const types = await this.adtclient.objectTypes();
-            this.trackRequest(startTime, true);
-            return {
-                content: [
-                    {
-                        type: 'text',
-                        text: JSON.stringify({
-                            status: 'success',
-                            types,
-                            message: 'Object types retrieved successfully'
-                        }, null, 2)
-                    }
-                ]
-            };
-        } catch (error: any) {
-            this.trackRequest(startTime, false);
-            const errorMessage = error.message || 'Unknown error';
-            const detailedError = error.response?.data?.message || errorMessage;
-            throw new McpError(
-                ErrorCode.InternalError,
-                `Failed to get object types: ${detailedError}`
             );
         }
     }
@@ -246,10 +229,10 @@ export class ObjectHandler extends BaseHandler {
         }
     }
 
-    async handleGetObjectSource(args: any): Promise<any> {
+    async handleGetObjectSourceCode(args: any): Promise<any> {
         const startTime = performance.now();
         try {
-          const source = await this.adtclient.getObjectSource(args.objectSourceUrl, args.options);
+          const source = await this.adtclient.getObjectSource(`${args.objectSourceUrl}/source/main`, args.options);
           this.trackRequest(startTime, true);
           return {
             content: [
@@ -268,6 +251,31 @@ export class ObjectHandler extends BaseHandler {
             ErrorCode.InternalError,
             `Failed to get object source: ${error.message || 'Unknown error'}`
           );
+        }
+    }
+
+    async handleObjectVersionHistory(args: any): Promise<any> {
+        const startTime = performance.now();
+        try {
+            const revisions = await this.adtclient.revisions(args.objectUrl, args.clasInclude);
+            this.trackRequest(startTime, true);
+            return {
+                content: [
+                    {
+                        type: 'text',
+                        text: JSON.stringify({
+                            status: 'success',
+                            revisions
+                        })
+                    }
+                ]
+            };
+        } catch (error: any) {
+            this.trackRequest(startTime, false);
+            throw new McpError(
+                ErrorCode.InternalError,
+                `Failed to get revisions: ${error.message || 'Unknown error'}`
+            );
         }
     }
 }

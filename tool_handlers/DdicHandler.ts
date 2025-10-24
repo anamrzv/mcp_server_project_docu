@@ -6,22 +6,14 @@ export class DdicHandler extends BaseHandler {
     getTools(): ToolDefinition[] {
         return [
             {
-                name: 'annotationDefinitions',
-                description: 'Retrieves annotation definitions.',
-                inputSchema: {
-                    type: 'object',
-                    properties: {}
-                }
-            },
-            {
-                name: 'ddicElement',
-                description: 'Retrieves information about a DDIC element.',
+                name: 'getDdicElementDetails',
+                description: 'Retrieves technical structure and metadata of ABAP Dictionary object (Table, Structure, or View). Returns the objects core properties, list of its fields (children) with details.',
                 inputSchema: {
                     type: 'object',
                     properties: {
                         path: {
                             type: 'string',
-                            description: 'The path to the DDIC element.'
+                            description: 'Name of DDIC element'
                         },
                         getTargetForAssociation: {
                             type: 'boolean',
@@ -43,32 +35,14 @@ export class DdicHandler extends BaseHandler {
                 }
             },
             {
-                name: 'ddicRepositoryAccess',
-                description: 'Accesses the DDIC repository.',
+                name: 'getPackages',
+                description: 'Performs a search for development packages with an optional name mask. Returns a list of package names and descriptions.',
                 inputSchema: {
                     type: 'object',
                     properties: {
-                        path: {
-                            type: 'string',
-                            description: 'The path to the DDIC element.'
-                        }
-                    },
-                    required: ['path']
-                }
-            },
-            {
-                name: 'packageSearchHelp',
-                description: 'Performs a package search help.',
-                inputSchema: {
-                    type: 'object',
-                    properties: {
-                        type: {
-                            type: 'string',
-                            description: 'The package value help type.'
-                        },
                         name: {
                             type: 'string',
-                            description: 'The package name.',
+                            description: 'Package name query',
                             optional: true
                         }
                     },
@@ -76,14 +50,14 @@ export class DdicHandler extends BaseHandler {
                 }
             },
             {
-                name: 'tableContents',
-                description: 'Retrieves the contents of an ABAP table.',
+                name: 'getTableContent',
+                description: 'Retrieves the contents of an ABAP table/view',
                 inputSchema: {
                     type: 'object',
                     properties: {
                         ddicEntityName: {
                             type: 'string',
-                            description: 'The name of the DDIC entity (table or view).'
+                            description: 'The name of the DDIC entity (table or view)'
                         },
                         rowNumber: {
                             type: 'number',
@@ -105,7 +79,7 @@ export class DdicHandler extends BaseHandler {
                 }
             },
             {
-                name: 'runQuery',
+                name: 'runSqlQuery',
                 description: 'Runs a SQL query on the target system.',
                 inputSchema: {
                     type: 'object',
@@ -133,45 +107,16 @@ export class DdicHandler extends BaseHandler {
 
     async handle(toolName: string, args: any): Promise<any> {
         switch (toolName) {
-            case 'annotationDefinitions':
-                return this.handleAnnotationDefinitions(args);
-            case 'ddicElement':
+            case 'getDdicElementDetails':
                 return this.handleDdicElement(args);
-            case 'ddicRepositoryAccess':
-                return this.handleDdicRepositoryAccess(args);
-            case 'packageSearchHelp':
-                return this.handlePackageSearchHelp(args);
-            case 'tableContents':
+            case 'getPackages':
+                return this.handleGetPackages(args);
+            case 'getTableContent':
                 return this.handleTableContents(args);
-            case 'runQuery':
+            case 'runSqlQuery':
                 return this.handleRunQuery(args);
             default:
                 throw new McpError(ErrorCode.MethodNotFound, `Unknown DDIC tool: ${toolName}`);
-        }
-    }
-
-    async handleAnnotationDefinitions(args: any): Promise<any> {
-        const startTime = performance.now();
-        try {
-            const result = await this.adtclient.annotationDefinitions();
-            this.trackRequest(startTime, true);
-            return {
-                content: [
-                    {
-                        type: 'text',
-                        text: JSON.stringify({
-                            status: 'success',
-                            result
-                        })
-                    }
-                ]
-            };
-        } catch (error: any) {
-            this.trackRequest(startTime, false);
-            throw new McpError(
-                ErrorCode.InternalError,
-                `Failed to get annotation definitions: ${error.message || 'Unknown error'}`
-            );
         }
     }
 
@@ -230,10 +175,10 @@ export class DdicHandler extends BaseHandler {
         }
     }
 
-    async handlePackageSearchHelp(args: any): Promise<any> {
+    async handleGetPackages(args: any): Promise<any> {
         const startTime = performance.now();
         try {
-            const result = await this.adtclient.packageSearchHelp(args.type, args.name);
+            const result = await this.adtclient.packageSearchHelp('softwarecomponents', args.name);
             this.trackRequest(startTime, true);
             return {
                 content: [

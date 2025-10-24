@@ -16,7 +16,7 @@ import { AuthHandler } from './tool_handlers/AuthHandler.js';
 import { ObjectHandler } from './tool_handlers/ObjectHandler.js';
 import { ClassHandler } from './tool_handlers/ClassHandler.js';
 import { CodeAnalysisHandler } from './tool_handlers/CodeAnalysisHandler.js';
-import { DiscoveryHandler } from './tool_handlers/DiscoveryHandler.js';
+import { GeneralInfoHandler } from './tool_handlers/GeneralInfoHandler.js';
 import { DdicHandler } from './tool_handlers/DdicHandler.js';
 import express from 'express';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
@@ -31,7 +31,7 @@ export class AbapAdtServer extends Server {
     private objectHandler: ObjectHandler;
     private classHandler: ClassHandler;
     private codeAnalysisHandler: CodeAnalysisHandler;
-    private discoveryHandler: DiscoveryHandler;
+    private generalInfoHandler: GeneralInfoHandler;
     private ddicHandler: DdicHandler;
 
     constructor() {
@@ -65,7 +65,7 @@ export class AbapAdtServer extends Server {
         this.objectHandler = new ObjectHandler(this.adtClient);
         this.classHandler = new ClassHandler(this.adtClient);
         this.codeAnalysisHandler = new CodeAnalysisHandler(this.adtClient);
-        this.discoveryHandler = new DiscoveryHandler(this.adtClient);
+        this.generalInfoHandler = new GeneralInfoHandler(this.adtClient);
         this.ddicHandler = new DdicHandler(this.adtClient);
         this.setupToolHandlers();
     }
@@ -125,7 +125,7 @@ export class AbapAdtServer extends Server {
                     ...this.classHandler.getTools(),
                     ...this.codeAnalysisHandler.getTools(),
                     ...this.ddicHandler.getTools(),
-                    ...this.discoveryHandler.getTools(),
+                    ...this.generalInfoHandler.getTools(),
                     {
                         name: 'healthcheck',
                         description: 'Check server health and connectivity',
@@ -148,11 +148,11 @@ export class AbapAdtServer extends Server {
                     case 'dropSession':
                         result = await this.authHandler.handle(request.params.name, request.params.arguments);
                         break;
-                    case 'objectStructure':
-                    case 'searchObject':
-                    case 'findObjectPath':
-                    case 'objectTypes':
-                    case 'getObjectSource':
+                    case 'getObjects':
+                    case 'getObjectStructure':
+                    case 'getObjectSourceCode':
+                    case 'getObjectPath':
+                    case 'getObjectVersionHistory':
                         result = await this.objectHandler.handle(request.params.name, request.params.arguments);
                         break;
                     case 'classIncludes':
@@ -169,22 +169,14 @@ export class AbapAdtServer extends Server {
                     case 'mainPrograms':
                         result = await this.codeAnalysisHandler.handle(request.params.name, request.params.arguments);
                         break;
-                    case 'featureDetails':
-                    case 'collectionFeatureDetails':
-                    case 'findCollectionByUrl':
-                    case 'loadTypes':
-                    case 'adtDiscovery':
-                    case 'adtCoreDiscovery':
-                    case 'adtCompatibiliyGraph':
-                    case 'revisions':
-                        result = await this.discoveryHandler.handle(request.params.name, request.params.arguments);
-                        break;
                     case 'annotationDefinitions':
-                    case 'ddicElement':
-                    case 'ddicRepositoryAccess':
-                    case 'packageSearchHelp':
-                    case 'tableContents':
-                    case 'runQuery':
+                    case 'objectTypes':
+                        result = await this.generalInfoHandler.handle(request.params.name, request.params.arguments);
+                        break;
+                    case 'getDdicElementDetails':
+                    case 'getPackages':
+                    case 'getTableContent':
+                    case 'runSqlQuery':
                         result = await this.ddicHandler.handle(request.params.name, request.params.arguments);
                         break;
                     case 'healthcheck':

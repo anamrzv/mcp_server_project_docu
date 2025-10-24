@@ -20,6 +20,7 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "start-ts": "tsx server.ts",
-    "start-cf": "npm run build && node dist/server.js"
+    "start-cf": "npm run build && node dist/server.js",
+    "start-mcp-inspector": "npx @modelcontextprotocol/inspector"
   }
 }

@@ -208,9 +208,17 @@ const app = express();
 app.use(express.json());
 
 app.post('/mcp', async (req: express.Request, res: express.Response) => {
+    const allowedHostsString = process.env.MCP_ALLOWED_HOSTS;
+    const allowedOriginsString = process.env.MCP_ALLOWED_ORIGINS;
+
+    const parsedAllowedHosts = allowedHostsString ? allowedHostsString.split(',') : ['127.0.0.1'];
+    const parsedAllowedOrigins = allowedOriginsString ? allowedOriginsString.split(',') : [];
+
     const transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: undefined,
-        enableJsonResponse: true
+        enableJsonResponse: true,
+        allowedHosts: parsedAllowedHosts, 
+        allowedOrigins: parsedAllowedOrigins, 
     });
 
     res.on('close', () => {

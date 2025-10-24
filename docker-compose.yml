@@ -16,4 +16,6 @@ services:
       - SAP_PASSWORD=${SAP_PASSWORD}
       - SAP_CLIENT=${SAP_CLIENT}
       - SAP_LANGUAGE=${SAP_LANGUAGE}
+      - MCP_ALLOWED_HOSTS=${MCP_ALLOWED_HOSTS}
+      - MCP_ALLOWED_ORIGINS=${MCP_ALLOWED_ORIGINS}
     restart: unless-stopped

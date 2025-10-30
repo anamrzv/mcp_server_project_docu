@@ -38,11 +38,6 @@ export class ObjectHandler extends BaseHandler {
                         objectUrl: {
                             type: 'string',
                             description: 'URL of the object'
-                        },
-                        version: {
-                            type: 'string',
-                            description: 'Version of the object',
-                            optional: true
                         }
                     },
                     required: ['objectUrl']
@@ -54,8 +49,7 @@ export class ObjectHandler extends BaseHandler {
                 inputSchema: {
                   type: 'object',
                   properties: {
-                    objectUrl: { type: 'string' },
-                    options: { type: 'string' }
+                    objectUrl: { type: 'string' }
                   },
                   required: ['objectUrl']
                 }
@@ -83,11 +77,6 @@ export class ObjectHandler extends BaseHandler {
                         objectUrl: {
                             type: 'string',
                             description: 'The URL of the object.'
-                        },
-                        clasInclude: {
-                            type: 'string',
-                            description: 'The class include.',
-                            optional: true
                         }
                     },
                     required: ['objectUrl']
@@ -116,7 +105,7 @@ export class ObjectHandler extends BaseHandler {
     async handleObjectStructure(args: any): Promise<any> {
         const startTime = performance.now();
         try {
-            const structure = await this.adtclient.objectStructure(args.objectUrl, args.version);
+            const structure = await this.adtclient.objectStructure(args.objectUrl);
             this.trackRequest(startTime, true);
             return {
                 content: [
@@ -201,38 +190,11 @@ export class ObjectHandler extends BaseHandler {
         }
     }
 
-    async handleReentranceTicket(args: any): Promise<any> {
-        const startTime = performance.now();
-        try {
-            const ticket = await this.adtclient.reentranceTicket();
-            this.trackRequest(startTime, true);
-            return {
-                content: [
-                    {
-                        type: 'text',
-                        text: JSON.stringify({
-                            status: 'success',
-                            ticket,
-                            message: 'Reentrance ticket retrieved successfully'
-                        }, null, 2)
-                    }
-                ]
-            };
-        } catch (error: any) {
-            this.trackRequest(startTime, false);
-            const errorMessage = error.message || 'Unknown error';
-            const detailedError = error.response?.data?.message || errorMessage;
-            throw new McpError(
-                ErrorCode.InternalError,
-                `Failed to get reentrance ticket: ${detailedError}`
-            );
-        }
-    }
 
     async handleGetObjectSourceCode(args: any): Promise<any> {
         const startTime = performance.now();
         try {
-          const source = await this.adtclient.getObjectSource(`${args.objectSourceUrl}/source/main`, args.options);
+          const source = await this.adtclient.getObjectSource(`${args.objectUrl}/source/main`);
           this.trackRequest(startTime, true);
           return {
             content: [

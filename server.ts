@@ -160,10 +160,8 @@ export class AbapAdtServer extends Server {
                     case 'bindingDetails':
                         result = await this.classHandler.handle(request.params.name, request.params.arguments);
                         break;
-                    case 'findDefinition':
-                    case 'usageReferences':
-                    case 'usageReferenceSnippets':
-                    case 'fragmentMappings':
+                    case 'getUsageReferences':
+                    case 'getUsageReferenceSnippets':
                     case 'abapDocumentation':
                     case 'nodeContents':
                     case 'mainPrograms':

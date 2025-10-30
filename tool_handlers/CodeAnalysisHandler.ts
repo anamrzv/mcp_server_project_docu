@@ -1,63 +1,30 @@
 import { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js";
 import { BaseHandler } from './BaseHandler.js';
 import type { ToolDefinition } from '../types/tools.js';
-import { ADTClient } from 'abap-adt-api';
 
 export class CodeAnalysisHandler extends BaseHandler {
     getTools(): ToolDefinition[] {
         return [
             {
-                name: 'findDefinition',
-                description: 'Find symbol definition',
+                name: 'getUsageReferences',
+                description: 'Finds URLs of objects that contain references to given object',
                 inputSchema: {
                     type: 'object',
                     properties: {
-                        url: { type: 'string' },
-                        source: { type: 'string' },
-                        line: { type: 'number' },
-                        startCol: { type: 'number' },
-                        endCol: { type: 'number' },
-                        implementation: { type: 'boolean', optional: true },
-                        mainProgram: { type: 'string', optional: true }
+                        objectUrl: { type: 'string' }
                     },
-                    required: ['url', 'source', 'line', 'startCol', 'endCol']
+                    required: ['objectUrl']
                 }
             },
             {
-                name: 'usageReferences',
-                description: 'Find symbol references',
+                name: 'getUsageReferenceSnippets',
+                description: 'Retrieves lines of code which the given reference(s) contain(s).',
                 inputSchema: {
                     type: 'object',
                     properties: {
-                        url: { type: 'string' },
-                        line: { type: 'number', optional: true },
-                        column: { type: 'number', optional: true }
+                        usageReferences: { type: 'array' }
                     },
-                    required: ['url']
-                }
-            },
-            {
-                name: 'usageReferenceSnippets',
-                description: 'Retrieves usage reference snippets.',
-                inputSchema: {
-                    type: 'object',
-                    properties: {
-                        references: { type: 'array' }
-                    },
-                    required: ['references']
-                }
-            },
-            {
-                name: 'fragmentMappings',
-                description: 'Retrieves fragment mappings.',
-                inputSchema: {
-                    type: 'object',
-                    properties: {
-                        url: { type: 'string' },
-                        type: { type: 'string' },
-                        name: { type: 'string' }
-                    },
-                    required: ['url', 'type', 'name']
+                    required: ['usageReferences']
                 }
             },
             {
@@ -133,14 +100,10 @@ export class CodeAnalysisHandler extends BaseHandler {
 
     async handle(toolName: string, args: any): Promise<any> {
         switch (toolName) {
-            case 'findDefinition':
-                return this.handleFindDefinition(args);
-            case 'usageReferences':
+            case 'getUsageReferences':
                 return this.handleUsageReferences(args);
-            case 'usageReferenceSnippets':
+            case 'getUsageReferenceSnippets':
                 return this.handleUsageReferenceSnippets(args);
-            case 'fragmentMappings':
-                return this.handleFragmentMappings(args);
             case 'abapDocumentation':
                 return this.handleAbapDocumentation(args);
             case 'nodeContents':
@@ -153,46 +116,11 @@ export class CodeAnalysisHandler extends BaseHandler {
     }
     
 
-    async handleFindDefinition(args: any): Promise<any> {
-        const startTime = performance.now();
-        try {
-            const result = await this.adtclient.findDefinition(
-                args.url,
-                args.source,
-                args.line,
-                args.startCol,
-                args.endCol,
-                args.implementation,
-                args.mainProgram
-            );
-            this.trackRequest(startTime, true);
-            return {
-                content: [
-                    {
-                        type: 'text',
-                        text: JSON.stringify({
-                            status: 'success',
-                            result
-                        })
-                    }
-                ]
-            };
-        } catch (error: any) {
-            this.trackRequest(startTime, false);
-            throw new McpError(
-                ErrorCode.InternalError,
-                `Find definition failed: ${error.message || 'Unknown error'}`
-            );
-        }
-    }
-
     async handleUsageReferences(args: any): Promise<any> {
         const startTime = performance.now();
         try {
             const result = await this.adtclient.usageReferences(
-                args.url,
-                args.line,
-                args.column
+                args.objectUrl
             );
             this.trackRequest(startTime, true);
             return {
@@ -219,7 +147,7 @@ export class CodeAnalysisHandler extends BaseHandler {
     async handleUsageReferenceSnippets(args: any): Promise<any> {
         const startTime = performance.now();
         try {
-            const result = await this.adtclient.usageReferenceSnippets(args.references);
+            const result = await this.adtclient.usageReferenceSnippets(args.usageReferences);
             this.trackRequest(startTime, true);
             return {
                 content: [

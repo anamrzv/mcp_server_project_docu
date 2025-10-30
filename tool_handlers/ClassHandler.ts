@@ -7,47 +7,28 @@ export class ClassHandler extends BaseHandler {
     getTools(): ToolDefinition[] {
         return [
             {
-                name: 'classIncludes',
-                description: 'Get class includes structure',
+                name: 'getClassComponents',
+                description: 'List methods and attributes of class',
                 inputSchema: {
                     type: 'object',
                     properties: {
-                        clas: {
-                            type: 'string',
-                            description: 'The class name'
-                        }
-                    },
-                    required: ['clas']
-                }
-            },
-            {
-                name: 'classComponents',
-                description: 'List class components',
-                inputSchema: {
-                    type: 'object',
-                    properties: {
-                        url: {
+                        objectUrl: {
                             type: 'string',
                             description: 'The URL of the class'
                         }
                     },
-                    required: ['url']
+                    required: ['objectUrl']
                 }
             },
             {
-                name: 'bindingDetails',
-                description: 'Retrieves details of a service binding.',
+                name: 'getServiceBindingDetails',
+                description: 'Retrieves details of a service binding',
                 inputSchema: {
                     type: 'object',
                     properties: {
                         binding: {
                             type: 'object',
                             description: 'The service binding.'
-                        },
-                        index: {
-                            type: 'number',
-                            description: 'The index of the service binding.',
-                            optional: true
                         }
                     },
                     required: ['binding']
@@ -58,46 +39,21 @@ export class ClassHandler extends BaseHandler {
 
     async handle(toolName: string, args: any): Promise<any> {
         switch (toolName) {
-            case 'classIncludes':
-                return this.handleClassIncludes(args);
-            case 'classComponents':
+            case 'getClassComponents':
                 return this.handleClassComponents(args);
-            case 'bindingDetails':
+            case 'getServiceBindingDetails':
                 return this.handleBindingDetails(args);
             default:
                 throw new McpError(ErrorCode.MethodNotFound, `Unknown class tool: ${toolName}`);
         }
     }
 
-    async handleClassIncludes(args: any): Promise<any> {
-        const startTime = performance.now();
-        try {
-            const result = await ADTClient.classIncludes(args.clas);
-            this.trackRequest(startTime, true);
-            return {
-                content: [
-                    {
-                        type: 'text',
-                        text: JSON.stringify({
-                            status: 'success',
-                            result
-                        })
-                    }
-                ]
-            };
-        } catch (error: any) {
-            this.trackRequest(startTime, false);
-            throw new McpError(
-                ErrorCode.InternalError,
-                `Failed to get class includes: ${error.message || 'Unknown error'}`
-            );
-        }
-    }
 
     async handleClassComponents(args: any): Promise<any> {
         const startTime = performance.now();
         try {
-            const result = await this.adtclient.classComponents(args.url);
+            await this.adtclient.login();
+            const result = await this.adtclient.classComponents(args.objectUrl);
             this.trackRequest(startTime, true);
             return {
                 content: [
@@ -119,39 +75,11 @@ export class ClassHandler extends BaseHandler {
         }
     }
 
-    async handleCreateTestInclude(args: any): Promise<any> {
-        const startTime = performance.now();
-        try {
-            const result = await this.adtclient.createTestInclude(
-                args.clas,
-                args.lockHandle,
-                args.transport
-            );
-            this.trackRequest(startTime, true);
-            return {
-                content: [
-                    {
-                        type: 'text',
-                        text: JSON.stringify({
-                            status: 'success',
-                            result
-                        })
-                    }
-                ]
-            };
-        } catch (error: any) {
-            this.trackRequest(startTime, false);
-            throw new McpError(
-                ErrorCode.InternalError,
-                `Failed to create test include: ${error.message || 'Unknown error'}`
-            );
-        }
-    }
-
     async handleBindingDetails(args: any): Promise<any> {
         const startTime = performance.now();
         try {
-            const details = await this.adtclient.bindingDetails(args.binding, args.index);
+            await this.adtclient.login();
+            const details = await this.adtclient.bindingDetails(args.binding);
             this.trackRequest(startTime, true);
             return {
                 content: [

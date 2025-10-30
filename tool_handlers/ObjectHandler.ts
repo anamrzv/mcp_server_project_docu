@@ -14,16 +14,6 @@ export class ObjectHandler extends BaseHandler {
                         query: {
                             type: 'string',
                             description: 'Search query string'
-                        },
-                        objType: {
-                            type: 'string',
-                            description: 'Object type filter',
-                            optional: true
-                        },
-                        max: {
-                            type: 'number',
-                            description: 'Maximum number of results',
-                            optional: true
                         }
                     },
                     required: ['query']
@@ -47,15 +37,15 @@ export class ObjectHandler extends BaseHandler {
                 name: 'getObjectSourceCode',
                 description: 'Retrieves source code for a ABAP object. Use this tool when you need to read or analyze existing ABAP code.',
                 inputSchema: {
-                  type: 'object',
-                  properties: {
-                    objectUrl: { type: 'string' }
-                  },
-                  required: ['objectUrl']
+                    type: 'object',
+                    properties: {
+                        objectUrl: { type: 'string' }
+                    },
+                    required: ['objectUrl']
                 }
             },
             {
-                name: 'getObjectPath',
+                name: 'getObjectFullPath',
                 description: 'Retrieves the full hierarchical path of an ABAP object within the systems package structure, starting from its root package down to the object itself',
                 inputSchema: {
                     type: 'object',
@@ -81,6 +71,19 @@ export class ObjectHandler extends BaseHandler {
                     },
                     required: ['objectUrl']
                 }
+            },
+            {
+                name: 'getPackageObjects',
+                description: 'Retrieves list of objects inside of package',
+                inputSchema: {
+                    type: 'object',
+                    properties: {
+                        package_name: {
+                            type: 'string',
+                        }
+                    },
+                    required: ['package_name']
+                }
             }
         ];
     }
@@ -93,10 +96,12 @@ export class ObjectHandler extends BaseHandler {
                 return this.handleObjectStructure(args);
             case 'getObjectSourceCode':
                 return this.handleGetObjectSourceCode(args);
-            case 'getObjectPath':
+            case 'getObjectFullPath':
                 return this.handleGetObjectPath(args);
             case 'getObjectVersionHistory':
                 return this.handleObjectVersionHistory(args);
+            case 'getPackageObjects':
+                return this.handlePackageObjects(args);
             default:
                 throw new McpError(ErrorCode.MethodNotFound, `Unknown object tool: ${toolName}`);
         }
@@ -105,6 +110,7 @@ export class ObjectHandler extends BaseHandler {
     async handleObjectStructure(args: any): Promise<any> {
         const startTime = performance.now();
         try {
+            await this.adtclient.login();
             const structure = await this.adtclient.objectStructure(args.objectUrl);
             this.trackRequest(startTime, true);
             return {
@@ -133,6 +139,7 @@ export class ObjectHandler extends BaseHandler {
     async handleGetObjectPath(args: any): Promise<any> {
         const startTime = performance.now();
         try {
+            await this.adtclient.login();
             const path = await this.adtclient.findObjectPath(args.objectUrl);
             this.trackRequest(startTime, true);
             return {
@@ -161,10 +168,9 @@ export class ObjectHandler extends BaseHandler {
     async handleGetObjects(args: any): Promise<any> {
         const startTime = performance.now();
         try {
+            await this.adtclient.login();
             const results = await this.adtclient.searchObject(
-                args.query,
-                args.objType,
-                args.max
+                args.query
             );
             this.trackRequest(startTime, true);
             return {
@@ -194,31 +200,33 @@ export class ObjectHandler extends BaseHandler {
     async handleGetObjectSourceCode(args: any): Promise<any> {
         const startTime = performance.now();
         try {
-          const source = await this.adtclient.getObjectSource(`${args.objectUrl}/source/main`);
-          this.trackRequest(startTime, true);
-          return {
-            content: [
-              {
-                type: 'text',
-                text: JSON.stringify({
-                  status: 'success',
-                  source
-                })
-              }
-            ]
-          };
+            await this.adtclient.login();
+            const source = await this.adtclient.getObjectSource(`${args.objectUrl}/source/main`);
+            this.trackRequest(startTime, true);
+            return {
+                content: [
+                    {
+                        type: 'text',
+                        text: JSON.stringify({
+                            status: 'success',
+                            source
+                        })
+                    }
+                ]
+            };
         } catch (error: any) {
-          this.trackRequest(startTime, false);
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Failed to get object source: ${error.message || 'Unknown error'}`
-          );
+            this.trackRequest(startTime, false);
+            throw new McpError(
+                ErrorCode.InternalError,
+                `Failed to get object source: ${error.message || 'Unknown error'}`
+            );
         }
     }
 
     async handleObjectVersionHistory(args: any): Promise<any> {
         const startTime = performance.now();
         try {
+            await this.adtclient.login();
             const revisions = await this.adtclient.revisions(args.objectUrl, args.clasInclude);
             this.trackRequest(startTime, true);
             return {
@@ -237,6 +245,35 @@ export class ObjectHandler extends BaseHandler {
             throw new McpError(
                 ErrorCode.InternalError,
                 `Failed to get revisions: ${error.message || 'Unknown error'}`
+            );
+        }
+    }
+
+    async handlePackageObjects(args: any): Promise<any> {
+        const startTime = performance.now();
+        try {
+            await this.adtclient.login();
+            const nodeContents = await this.adtclient.nodeContents(
+                'DEVC/K',
+                args.package_name
+            );
+            this.trackRequest(startTime, true);
+            return {
+                content: [
+                    {
+                        type: 'text',
+                        text: JSON.stringify({
+                            status: 'success',
+                            nodeContents
+                        })
+                    }
+                ]
+            };
+        } catch (error: any) {
+            this.trackRequest(startTime, false);
+            throw new McpError(
+                ErrorCode.InternalError,
+                `Failed to get node contents: ${error.message || 'Unknown error'}`
             );
         }
     }

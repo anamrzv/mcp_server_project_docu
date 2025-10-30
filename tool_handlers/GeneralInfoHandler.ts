@@ -6,7 +6,7 @@ export class GeneralInfoHandler extends BaseHandler {
     getTools(): ToolDefinition[] {
         return [
             {
-                name: 'annotationDefinitions',
+                name: 'getAllAnnotations',
                 description: 'Get definitions of all standard annotations',
                 inputSchema: {
                     type: 'object',
@@ -14,7 +14,7 @@ export class GeneralInfoHandler extends BaseHandler {
                 }
             },
             {
-                name: 'objectTypes',
+                name: 'getAllObjectTypes',
                 description: 'Get all standard object types',
                 inputSchema: {
                     type: 'object',
@@ -26,9 +26,9 @@ export class GeneralInfoHandler extends BaseHandler {
 
     async handle(toolName: string, args: any): Promise<any> {
         switch (toolName) {
-            case 'annotationDefinitions':
+            case 'getAllAnnotations':
                 return this.handleAnnotationDefinitions(args);
-            case 'objectTypes':
+            case 'getAllObjectTypes':
                 return this.handleObjectTypes(args);
             default:
                 throw new McpError(ErrorCode.MethodNotFound, `Unknown DDIC tool: ${toolName}`);
@@ -38,6 +38,7 @@ export class GeneralInfoHandler extends BaseHandler {
     async handleAnnotationDefinitions(args: any): Promise<any> {
         const startTime = performance.now();
         try {
+            await this.adtclient.login();
             const result = await this.adtclient.annotationDefinitions();
             this.trackRequest(startTime, true);
             return {
@@ -63,6 +64,7 @@ export class GeneralInfoHandler extends BaseHandler {
     async handleObjectTypes(args: any): Promise<any> {
         const startTime = performance.now();
         try {
+            await this.adtclient.login();
             const types = await this.adtclient.objectTypes();
             this.trackRequest(startTime, true);
             return {

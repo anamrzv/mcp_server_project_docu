@@ -35,7 +35,7 @@ export class DdicHandler extends BaseHandler {
                 }
             },
             {
-                name: 'getPackages',
+                name: 'getPackagesByName',
                 description: 'Performs a search for development packages with an optional name mask. Returns a list of package names and descriptions.',
                 inputSchema: {
                     type: 'object',
@@ -109,7 +109,7 @@ export class DdicHandler extends BaseHandler {
         switch (toolName) {
             case 'getDdicElementDetails':
                 return this.handleDdicElement(args);
-            case 'getPackages':
+            case 'getPackagesByName':
                 return this.handleGetPackages(args);
             case 'getTableContent':
                 return this.handleTableContents(args);
@@ -123,6 +123,7 @@ export class DdicHandler extends BaseHandler {
     async handleDdicElement(args: any): Promise<any> {
         const startTime = performance.now();
         try {
+            await this.adtclient.login();
             const result = await this.adtclient.ddicElement(
                 args.path,
                 args.getTargetForAssociation,
@@ -153,6 +154,7 @@ export class DdicHandler extends BaseHandler {
     async handleDdicRepositoryAccess(args: any): Promise<any> {
         const startTime = performance.now();
         try {
+            await this.adtclient.login();
             const result = await this.adtclient.ddicRepositoryAccess(args.path);
             this.trackRequest(startTime, true);
             return {
@@ -178,6 +180,7 @@ export class DdicHandler extends BaseHandler {
     async handleGetPackages(args: any): Promise<any> {
         const startTime = performance.now();
         try {
+            await this.adtclient.login();
             const result = await this.adtclient.packageSearchHelp('softwarecomponents', args.name);
             this.trackRequest(startTime, true);
             return {
@@ -203,6 +206,7 @@ export class DdicHandler extends BaseHandler {
     async handleTableContents(args: any): Promise<any> {
         const startTime = performance.now();
         try {
+            await this.adtclient.login();
             const result = await this.adtclient.tableContents(
                 args.ddicEntityName,
                 args.rowNumber,
@@ -230,6 +234,7 @@ export class DdicHandler extends BaseHandler {
     async handleRunQuery(args: any): Promise<any> {
         const startTime = performance.now();
         try {
+            await this.adtclient.login();
             const result = await this.adtclient.runQuery(
                 args.sqlQuery,
                 args.rowNumber,

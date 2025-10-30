@@ -12,10 +12,9 @@ import { ADTClient, session_types } from "abap-adt-api";
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import { AuthHandler } from './tool_handlers/AuthHandler.js';
 import { ObjectHandler } from './tool_handlers/ObjectHandler.js';
 import { ClassHandler } from './tool_handlers/ClassHandler.js';
-import { CodeAnalysisHandler } from './tool_handlers/CodeAnalysisHandler.js';
+import { ReferenceHandler } from './tool_handlers/ReferenceHandler.js';
 import { GeneralInfoHandler } from './tool_handlers/GeneralInfoHandler.js';
 import { DdicHandler } from './tool_handlers/DdicHandler.js';
 import express from 'express';
@@ -27,10 +26,9 @@ config({ path: path.resolve(__dirname, '../.env') });
 
 export class AbapAdtServer extends Server {
     private adtClient: ADTClient;
-    private authHandler: AuthHandler;
     private objectHandler: ObjectHandler;
     private classHandler: ClassHandler;
-    private codeAnalysisHandler: CodeAnalysisHandler;
+    private referenceHandler: ReferenceHandler;
     private generalInfoHandler: GeneralInfoHandler;
     private ddicHandler: DdicHandler;
 
@@ -61,10 +59,9 @@ export class AbapAdtServer extends Server {
         );
         this.adtClient.stateful = session_types.stateful
 
-        this.authHandler = new AuthHandler(this.adtClient);
         this.objectHandler = new ObjectHandler(this.adtClient);
         this.classHandler = new ClassHandler(this.adtClient);
-        this.codeAnalysisHandler = new CodeAnalysisHandler(this.adtClient);
+        this.referenceHandler = new ReferenceHandler(this.adtClient);
         this.generalInfoHandler = new GeneralInfoHandler(this.adtClient);
         this.ddicHandler = new DdicHandler(this.adtClient);
         this.setupToolHandlers();
@@ -120,10 +117,9 @@ export class AbapAdtServer extends Server {
         this.setRequestHandler(ListToolsRequestSchema, async () => {
             return {
                 tools: [
-                    ...this.authHandler.getTools(),
                     ...this.objectHandler.getTools(),
                     ...this.classHandler.getTools(),
-                    ...this.codeAnalysisHandler.getTools(),
+                    ...this.referenceHandler.getTools(),
                     ...this.ddicHandler.getTools(),
                     ...this.generalInfoHandler.getTools(),
                     {
@@ -143,36 +139,28 @@ export class AbapAdtServer extends Server {
                 let result: any;
 
                 switch (request.params.name) {
-                    case 'login':
-                    case 'logout':
-                    case 'dropSession':
-                        result = await this.authHandler.handle(request.params.name, request.params.arguments);
-                        break;
                     case 'getObjects':
                     case 'getObjectStructure':
                     case 'getObjectSourceCode':
-                    case 'getObjectPath':
+                    case 'getObjectFullPath':
                     case 'getObjectVersionHistory':
+                    case 'getPackageObjects':
                         result = await this.objectHandler.handle(request.params.name, request.params.arguments);
                         break;
-                    case 'classIncludes':
-                    case 'classComponents':
-                    case 'bindingDetails':
+                    case 'getClassComponents':
+                    case 'getServiceBindingDetails':
                         result = await this.classHandler.handle(request.params.name, request.params.arguments);
                         break;
                     case 'getUsageReferences':
                     case 'getUsageReferenceSnippets':
-                    case 'abapDocumentation':
-                    case 'nodeContents':
-                    case 'mainPrograms':
-                        result = await this.codeAnalysisHandler.handle(request.params.name, request.params.arguments);
+                        result = await this.referenceHandler.handle(request.params.name, request.params.arguments);
                         break;
-                    case 'annotationDefinitions':
-                    case 'objectTypes':
+                    case 'getAllAnnotations':
+                    case 'getAllObjectTypes':
                         result = await this.generalInfoHandler.handle(request.params.name, request.params.arguments);
                         break;
                     case 'getDdicElementDetails':
-                    case 'getPackages':
+                    case 'getPackagesByName':
                     case 'getTableContent':
                     case 'runSqlQuery':
                         result = await this.ddicHandler.handle(request.params.name, request.params.arguments);
